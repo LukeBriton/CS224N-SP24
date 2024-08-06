@@ -164,9 +164,9 @@ class ParserModel(nn.Module):
         # h = h * self.dropout
         b1 = self.embed_to_hidden_bias
         h = nn.ReLU()
-        h = self.dropout*h(torch.matmul(self.embedding_lookup(w), self.embed_to_hidden_weight) + b1.expand(w.shape[0], -1))
+        h = self.dropout*h(torch.matmul(self.embedding_lookup(w), self.embed_to_hidden_weight) + b1) # no need for b1.expand(w.shape[0], -1)
         b2 = self.hidden_to_logits_bias
-        logits = torch.matmul(h, self.hidden_to_logits_weight) + b2.expand(w.shape[0], -1)
+        logits = torch.matmul(h, self.hidden_to_logits_weight) + b2 # no need for b2.expand(w.shape[0], -1)
         ### END YOUR CODE
         return logits
 
