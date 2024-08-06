@@ -117,7 +117,7 @@ class ParserModel(nn.Module):
         # We cannot just write like: torch.Tensor([torch.index_select(self.embeddings, 0, i) for i in w])!!!
         # Otherwise: ValueError: only one element tensors can be converted to Python scalars
         # x = torch.stack(tuple(torch.index_select(self.embeddings, 0, i) for i in w))
-        x = torch.stack(tuple(([torch.flatten(torch.index_select(self.embeddings, 0, i)) for i in w])))
+        x = torch.stack(tuple(torch.flatten(torch.index_select(self.embeddings, 0, i)) for i in w))
         ### END YOUR CODE
         return x
 
