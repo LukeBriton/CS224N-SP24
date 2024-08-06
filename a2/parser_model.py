@@ -72,10 +72,17 @@ class ParserModel(nn.Module):
         ###     Dropout: https://pytorch.org/docs/stable/nn.html#dropout-layers
         ### 
         ### See the PDF for hints.
+        self.embed_to_hidden_weight = nn.Parameter(torch.empty(self.n_features * self.embed_size, self.hidden_size))
+        nn.init.xavier_uniform_(self.embed_to_hidden_weight)
+        self.embed_to_hidden_bias = nn.Parameter(torch.empty(self.hidden_size))
+        nn.init.uniform_(self.embed_to_hidden_bias)
 
-
-
-
+        self.dropout = torch.bernoulli((1.0 - self.dropout_prob) * torch.ones(self.hidden_size))/(1.0 - self.dropout_prob)
+        
+        self.hidden_to_logits_weight = nn.Parameter(torch.empty(self.hidden_size, self.n_classes))
+        nn.init.xavier_uniform_(self.hidden_to_logits_weight)
+        self.hidden_to_logits_bias = nn.Parameter(torch.empty(self.n_classes))
+        nn.init.uniform_(self.hidden_to_logits_bias)
         ### END YOUR CODE
 
     def embedding_lookup(self, w):
@@ -106,9 +113,11 @@ class ParserModel(nn.Module):
         ###     Gather: https://pytorch.org/docs/stable/torch.html#torch.gather
         ###     View: https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
         ###     Flatten: https://pytorch.org/docs/stable/generated/torch.flatten.html
-
-
-
+        # Misunderstood version:
+        # We cannot just write like: torch.Tensor([torch.index_select(self.embeddings, 0, i) for i in w])!!!
+        # Otherwise: ValueError: only one element tensors can be converted to Python scalars
+        # x = torch.stack(tuple(torch.index_select(self.embeddings, 0, i) for i in w))
+        x = torch.stack(tuple(([torch.flatten(torch.index_select(self.embeddings, 0, i)) for i in w])))
         ### END YOUR CODE
         return x
 
@@ -143,8 +152,21 @@ class ParserModel(nn.Module):
         ### Please see the following docs for support:
         ###     Matrix product: https://pytorch.org/docs/stable/torch.html#torch.matmul
         ###     ReLU: https://pytorch.org/docs/stable/nn.html?highlight=relu#torch.nn.functional.relu
-
-
+        # Call the Module instance instead of this.
+        # 'w' here: input tensor of **tokens** (token has to be represent in int as input in NN...)
+        # 'w' in embedding_lookup: input tensor of word indices
+        # Misundertood version:
+        # Sadly we cannot write this: bias = torch.stack(tuple(np.full(w.shape[0], self.embed_to_hidden_bias)))
+        # Can't call numpy() on Tensor that requires grad. Use tensor.detach().numpy() instead.
+        # b1 = torch.stack(tuple(self.embed_to_hidden_bias for i in range(w.shape[0])))
+        # b2 = torch.stack(tuple(self.hidden_to_logits_bias for i in range(w.shape[0])))
+        # h = nn.ReLU(torch.bmm(self.embedding_lookup(w), self.embed_to_hidden_weight) + b1)
+        # h = h * self.dropout
+        b1 = self.embed_to_hidden_bias
+        h = nn.ReLU()
+        h = self.dropout*h(torch.matmul(self.embedding_lookup(w), self.embed_to_hidden_weight) + b1.expand(w.shape[0], -1))
+        b2 = self.hidden_to_logits_bias
+        logits = torch.matmul(h, self.hidden_to_logits_weight) + b2.expand(w.shape[0], -1)
         ### END YOUR CODE
         return logits
 
