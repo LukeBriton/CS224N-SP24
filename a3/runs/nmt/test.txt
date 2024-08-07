@@ -1,0 +1,8 @@
+[nltk_data]   Package punkt is already up-to-date!
+load test source sentences from [./zh_en_data/test.zh]
+load test target sentences from [./zh_en_data/test.en]
+load model from model.bin
+Decoding:   0%|                                                                                                                     | 0/1001 [00:00<?, ?it/s]C:\Python311\Lib\site-packages\torch\nn\modules\conv.py:306: UserWarning: Using padding='same' with even kernel lengths and odd dilation may require a zero-padded copy of the input be created (Triggered internally at ..\aten\src\ATen\native\Convolution.cpp:1009.)
+  return F.conv1d(input, weight, bias, self.stride,
+Decoding: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 1001/1001 [01:03<00:00, 15.77it/s]
+Corpus BLEU: 20.16411739233015
