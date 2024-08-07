@@ -85,9 +85,18 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.nn.Linear.html
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/generated/torch.nn.Dropout.html
-
-
-
+        self.post_embed_cnn = nn.Conv1d(in_channels = embed_size, out_channels = embed_size, kernel_size = 2, padding = 'same')
+        # https://stackoverflow.com/questions/53010465/bidirectional-lstm-output-question-in-pytorch
+        self.encoder = nn.LSTM(input_size = embed_size, hidden_size = hidden_size, bias = True, bidirectional = True)
+        # https://stackoverflow.com/questions/53010465/bidirectional-lstm-output-question-in-pytorch
+        # https://stackoverflow.com/questions/48187283/whats-the-difference-between-lstm-and-lstmcell
+        self.decoder = nn.LSTMCell(input_size = embed_size + hidden_size, hidden_size = hidden_size, bias = True)
+        self.h_projection = nn.Linear(in_features = 2*hidden_size, out_features = hidden_size, bias = False)
+        self.c_projection = nn.Linear(in_features = 2*hidden_size, out_features = hidden_size, bias = False)
+        self.att_projection = nn.Linear(in_features = 2*hidden_size, out_features = hidden_size, bias = False)
+        self.combined_output_projection = nn.Linear(in_features = 3*hidden_size, out_features = hidden_size, bias = False)
+        self.target_vocab_projection = nn.Linear(in_features = hidden_size, out_features = len(vocab.tgt), bias = False)
+        self.dropout = nn.Dropout(p = dropout_rate)
         ### END YOUR CODE
 
     def forward(self, source: List[List[str]], target: List[List[str]]) -> torch.Tensor:
