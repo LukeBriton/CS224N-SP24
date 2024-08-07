@@ -35,9 +35,12 @@ def pad_sents(sents, pad_token):
     sents_padded = []
 
     ### YOUR CODE HERE (~6 Lines)
-
-
-
+    # sents = [[1, 2, 3 , 4, 5], [1], [2], [1, 2, 3, 4, 5, 6]]
+    # https://stackoverflow.com/questions/52022499/how-to-find-the-longest-list-in-a-list
+    sent_length = len(max(sents, key=len))
+    # https://stackoverflow.com/questions/3459098/create-list-of-single-item-repeated-n-times
+    # https://stackoverflow.com/questions/1720421/how-do-i-concatenate-two-lists-in-python
+    sents_padded = [ sent + [pad_token] * (sent_length - len(sent)) for sent in sents]
     ### END YOUR CODE
 
     return sents_padded
