@@ -280,12 +280,19 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.cat.html
         ###     Tensor Stacking:
         ###         https://pytorch.org/docs/stable/generated/torch.stack.html
-
-
-
-
-
-
+        enc_hiddens_proj = self.att_projection(enc_hiddens)
+        # print(enc_hiddens.shape)
+        # print(enc_hiddens_proj.shape)
+        Y = torch.transpose(self.model_embeddings.target(torch.transpose(target_padded, 0, 1)), 0, 1)
+        for Y_t in torch.split(Y, 1):
+            Y_t = torch.squeeze(Y_t, 0)
+            Ybar_t = torch.cat((Y_t, o_prev), 1) # Concatenated Tensor of [Y_t o_prev]
+            # even if I only need the first two returns, we cannot omit the third one, otherwise:
+            # ValueError: too many values to unpack (expected 2)
+            dec_state, o_t, e_t = self.step(Ybar_t, dec_state, enc_hiddens, enc_hiddens_proj, enc_masks)
+            combined_outputs.append(o_t)
+            o_prev = o_t
+        combined_outputs = torch.stack(tuple(o_i for o_i in combined_outputs))
         ### END YOUR CODE
 
         return combined_outputs
