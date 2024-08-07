@@ -188,11 +188,31 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.cat.html
         ###     Tensor Permute:
         ###         https://pytorch.org/docs/stable/generated/torch.permute.html
-
-
-
-
-
+        # https://stackoverflow.com/questions/65451265/pytorch-why-batch-is-the-second-dimension-in-the-default-lstm
+        # https://stackoverflow.com/questions/49466894/how-to-correctly-give-inputs-to-embedding-lstm-and-linear-layers-in-pytorch?noredirect=1&lq=1
+        # No need to reconstruct like a2 > parser_model.py > embedding_lookup(w)
+        # x = torch.stack(tuple(torch.index_select(self.model_embeddings.source, 0, sentence) for sentence in torch.transpose(source_padded, 0, 1)))
+        X = torch.transpose(self.model_embeddings.source(torch.transpose(source_padded, 0, 1)), 0, 1)
+        X = torch.permute(self.post_embed_cnn(torch.permute(X, (1, 2, 0))), (2, 0, 1)) # reminds me of permutation in LA
+        # All RNN modules accept packed sequences as inputs.
+        #   def pad_packed_sequence(
+        #       sequence: PackedSequence,
+        #       batch_first: bool = False,
+        #       padding_value: float = 0.0,
+        #       total_length: Optional[int] = None,
+        #   ) -> Tuple[Tensor, Tensor]:
+        # This is not okay:
+        # enc_hiddens = torch.transpose(pad_packed_sequence(self.encoder(pack_padded_sequence(X, source_lengths)))[0], 0, 1)
+        # https://stackoverflow.com/questions/65906889/lstm-error-attributeerror-tuple-object-has-no-attribute-dim
+        # print(self.encoder(pack_padded_sequence(X, source_lengths))) ->
+        # (PackedSequence(data=tensor(...), batch_sizes=tensor(...), tensor(...))) <- Singleton Tuple
+        # nn.LSTM Outputs: output, (h_n, c_n)
+        enc_hiddens, (last_hidden, last_cell) = self.encoder(pack_padded_sequence(X, source_lengths))
+        enc_hiddens = torch.transpose(pad_packed_sequence(enc_hiddens)[0], 0, 1)
+        init_decoder_hidden = self.h_projection(torch.flatten(torch.transpose(last_hidden, 0, 1), start_dim = 1))
+        init_decoder_cell = self.c_projection(torch.flatten(torch.transpose(last_cell, 0, 1), start_dim = 1))
+        dec_init_state = (init_decoder_hidden, init_decoder_cell)
+        # print(dec_init_state)
         ### END YOUR CODE
 
         return enc_hiddens, dec_init_state
