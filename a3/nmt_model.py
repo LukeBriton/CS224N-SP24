@@ -348,8 +348,19 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.unsqueeze.html
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/generated/torch.squeeze.html
-
-
+        # nn.LSTMCell Inputs: input, (h_0, c_0) Outputs: (h_1, c_1)
+        dec_state = self.decoder(Ybar_t, dec_state)
+        dec_hidden, dec_cell = dec_state # unpack
+        # e_{t} = (h^dec_t)^T @ b * 1 * h ||
+        # enc_hiddens_proj = h^enc @ self.att_projection
+        # b * src_len * h || b * src_len * 2h || b * 2h * h
+        #             e^t = enc_hiddens_proj @  dec_hidden
+        # (b, src_len, 1) = (b, src_len, h)  @ (b, h, 1)
+        # strange, but enc_hiddens_proj is (b, src_len, h), seems enc_hiddens got transposed before nn.decoder()
+        e_t = torch.squeeze(torch.bmm(enc_hiddens_proj, torch.unsqueeze(dec_hidden, 2)), 2)
+        # print(enc_hiddens_proj.shape)
+        # print(dec_hidden.shape)
+        # print(e_t.shape)
         ### END YOUR CODE
 
         # Set e_t to -inf where enc_masks has 1
@@ -382,8 +393,17 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.cat.html
         ###     Tanh:
         ###         https://pytorch.org/docs/stable/generated/torch.tanh.html
-
-
+        softmax = nn.Softmax(dim = 1)
+        alpha_t = softmax(e_t)
+        # (b, 1, 2h) = (b, 1, src_len)  @ (b, src_len, 2h)
+        a_t = torch.squeeze(torch.bmm(torch.unsqueeze(alpha_t, 1), enc_hiddens), 1)
+        # print(alpha_t.shape)
+        # print(enc_hiddens.shape)
+        # print(a_t.shape)
+        U_t = torch.cat((a_t, dec_hidden), 1)
+        V_t = self.combined_output_projection(U_t)
+        tanh = nn.Tanh()
+        O_t = self.dropout(tanh(V_t))
         ### END YOUR CODE
 
         combined_output = O_t
