@@ -51,6 +51,9 @@ Prove that the naive-softmax loss (Equation \ref{naive-softmax}) is the same as 
 
 Your answer should be one line. You may describe your answer in words.
 
+\ifans{For the single pair of words $c$ and $o$, $\by$ is one-hot, being $1$ for $o$ and $0$ everywhere else.
+
+(Note that cross the whole dataset, a center word $c$ would have different outside words $o$.)}
 
 % Question 1-B
 \part[6]
@@ -61,11 +64,37 @@ Your answer should be one line. You may describe your answer in words.
         \item \textbf{Note}: Your final answers for the partial derivative should follow the shape convention: the partial derivative of any function $f(x)$ with respect to $x$ should have the \textbf{same shape} as $x$.\footnote{This allows us to efficiently minimize a function using gradient descent without worrying about reshaping or dimension mismatching. While following the shape convention, we're guaranteed that $\theta:= \theta - \alpha\frac{\partial J(\theta)}{\partial \theta}$ is a well-defined update rule.}
         \item Please provide your answers for the partial derivative in vectorized form. For example, when we ask you to write your answers in terms of $\by$, $\hat{\by}$, and $\bU$, you may not refer to specific elements of these terms in your final answer (such as $\by_1$, $\by_2$, $\dots$). 
     \end{itemize}
+    \ifans{
+    \begin{align*} 
+    	\bJ_{\text{naive-softmax}}(\bv_c, o, \bU)
+    	&= -\log P(O=o| C=c) \\
+    	&= -\log \frac{\exp(\bu_{o}^\top \bv_c)}{\sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)} \\
+    	&= -\log \exp(\bu_{o}^\top \bv_c) + \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c) \\
+    	&= - \bu_{o}^\top \bv_c + \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c) \\
+    	\frac{\partial \bJ_{\text{naive-softmax}}(\bv_c, o, \bU)}{\partial \bv_c}
+    	&= -\frac{\partial \bu_{o}^\top \bv_c}{\partial \bv_c} + \frac{\partial \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)}{\partial \bv_c} \\
+    	&= -\bu_{o}^\top + \frac{\sum_{w \in \text{Vocab}} \bu_{w}^\top \exp(\bu_{w}^\top \bv_c)}{\sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)} \\
+    	&= -\bu_{o}^\top + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
+    	&= \sum_{w \in \text{Vocab}} \bu_{w}^\top \by_w + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
+    	&= -\bU^\top \by + \bU^\top\hat{\by} \\
+    	&= \bU^\top (\hat{\by} - \by) \tag{cf. textbook Eq. 5.48}
+   	\end{align*}
+    }
     \item
     When is the gradient you computed equal to zero? \\
     \textbf{Hint:} You may wish to review and use some introductory linear algebra concepts.
+    
+    \ifans{
+    \begin{itemize}
+    	\item $(\hat\by-\by) \in \text{Ker}\ \bU^\top$ (or $\text{Null}\ \bU^\top$)
+    	\item $(\hat\by-\by)$ is orthogonal to $\text{Ran}\ \bU^\top$
+    \end{itemize}
+	}
     \item
     The gradient you found is the difference between the two terms. Provide an interpretation of how each of these terms improves the word vector when this gradient is subtracted from the word vector $v_c$.
+    
+    \ifans{ When the gradient is subtracted, it becomes $\bU^\top \by - \bU^\top\hat{\by}$. The first term moves $\bv_c$ towards the true ‘outside’ vector $\bu_o$ closer by adding $\bu_{o}^\top\by_o$, while the second term moves $\bv_c$ farther away from noise words by subtracting $\bu_{w}^\top\hat{\by}_w (w\neq o)$. (Note that the second term ‘lags’ the first term by subtracting $\bu_{o}^\top\hat{\by}_o$)
+    }
 
 \end{enumerate}
 
@@ -77,16 +106,52 @@ In many downstream applications using word embeddings, L2 normalized vectors (e.
 
 \textbf{Hint:} Consider the case where $\mathbf{u}_x = \alpha\mathbf{u}_y$ for some words $x \neq y$ and some scalar $\alpha$. When $\alpha$ is positive, what will be the value of normalized  $\mathbf{u}_x$ and normalized $\mathbf{u}_y$? How might $\mathbf{u}_x$ and $\mathbf{u}_y$ be related for such a normalization to affect or not affect the resulting classification?
 
+\ifans{
+\begin{align*}
+	\bu_x = \alpha\bu_y
+	&\implies ||\bu_x|| = \alpha||\bu_y|| \\
+	&\implies \bu_x/||\bu_x|| = \alpha\bu_y/(\alpha||\bu_y||) = \bu_y/||\bu_y||
+	\tag{\alpha\ >\ 0}
+\end{align*}
+Then we cannot distinguish the contribution to sum between $\bu_x$ and $\bu_y$ after normalization. For example, $\bu_x/||\bu_x|| + \bu_z/||\bu_z||$ and $\bu_y/||\bu_y|| + \bu_z/||\bu_z||$ will be the same. And if $||\bu_x||$ is \gg $||\bu_y||$, $\bu_x + \bu_z$ should be much ‘closer’ to $\bu_x$ than $\bu_y + \bu_z$ to $\bu_y$, which just cannot be reflected in the sum after normalization.
+
+Another example, if we have $\bx = (3, 4)$ and $\by = (-6, -8)$, before normalization we have $\bx + \by = (-3, -4)$, which just isn't the case, since $\bx/||\bx|| + \by/||\by|| = (0, 0)$, we eliminate both its magnitude and direction.
+
+The only occasion for me when it doesn't take away useful information, is when all embeddings are of almost same size. But I don't see the point normalizing then. Therefore when it comes to this specific task, I'd rather not do the normalization.  
+
+Related: \href{https://stackoverflow.com/questions/62827526/what-do-negative-vectors-mean-on-word2vec}{What do negative vectors mean on word2vec?}
+}
 
 % Question 1-D
 \part[5] 
 Compute the partial derivatives of $\bJ_{\text{naive-softmax}}(\bv_c, o, \bU)$ with respect to each of the `outside' word vectors, $\bu_w$'s. There will be two cases: when $w=o$, the true `outside' word vector, and $w \neq o$, for all other words. Please write your answer in terms of $\by$, $\hat{\by}$, and $\bv_c$. In this subpart, you may use specific elements within these terms as well (such as $\by_1$, $\by_2$, $\dots$). Note that $\bu_w$ is a vector while $\by_1, \by_2, \dots$ are scalars. Show your work to receive full credit.
 
+\ifans{
+\begin{align*} 
+	\frac{\partial \bJ_{\text{naive-softmax}}(\bv_c, o, \bU)}{\partial \bu_o}
+	&= -\frac{\partial \bu_{o}^\top \bv_c}{\partial \bu_o} + \frac{\partial \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)}{\partial \bu_o} \\
+	&= -\bv_c^\top + \frac{ \bv_{c}^\top \exp(\bu_{o}^\top \bv_c)}{\sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)} \\
+	&= -\bv_c^\top + \bv_c^\top\hat{\by}_o \\
+	\frac{\partial \bJ_{\text{naive-softmax}}(\bv_c, o, \bU)}{\partial \bu_i}
+	&= \frac{\partial \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)}{\partial \bu_i} \\
+	&= \frac{\bv_{c}^\top \exp(\bu_{i}^\top \bv_c)}{\sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)} \\
+	&= \bv_c^\top\hat{\by}_i \tag{i\ \neq\ o}
+\end{align*}
 
-
+Related: \href{https://math.stackexchange.com/questions/20694/vector-derivative-w-r-t-its-transpose-fracdaxdxt}{Vector derivative w.r.t its transpose $\frac{d(Ax)}{d(x^T)}$}
+}
 % Question 1-E
 \part[1]
 Write down the partial derivative of $\bJ_{\text{naive-softmax}}(\bv_c, o, \bU)$ with respect to $\bU$. Please break down your answer in terms of the column vectors $\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_1}$, $\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_2}$, $\cdots$, $\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_{|\text{Vocab}|}}$. No derivations are necessary, just an answer in the form of a matrix.
 
+\ifans{
+$\begin{pmatrix}
+	\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_1} &
+	\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_2} &
+	... &
+	\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_{|\text{Vocab}|}}
+\end{pmatrix}$
+as its Jacobian matrix.
+}
 
 \end{parts}
