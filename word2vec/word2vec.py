@@ -18,7 +18,8 @@ def sigmoid(x):
     """
 
     ### YOUR CODE HERE (~1 Line)
-
+    # Vectorization & Broadcasting
+    s = 1/(1 + np.exp(-x))
     ### END YOUR CODE
 
     return s
@@ -60,6 +61,34 @@ def naiveSoftmaxLossAndGradient(
     """
 
     ### YOUR CODE HERE (~6-8 Lines)
+    # F**K numpy!
+    # numpy doesn't differentiate column and row vectors by default... 
+    # https://stackoverflow.com/questions/17428621/python-differentiating-between-row-and-column-vectors
+    # row vector: shape(1, -1)
+    # column vector: shape(-1, 1)
+    v_c = centerWordVec.reshape(-1, 1) # v_c, column
+
+    # Compute the softmax function for each row of the U^T.
+    # softmaxed[w] = softmax(u_w^T * v_c)
+    # Dammit, it softmaxes along each row!!!
+    hat_y = softmax((outsideVectors @ v_c).reshape(-1)).reshape(-1, 1) # \hat{y}, column
+
+    # loss = -log\hat{y}_o = -log softmax(u_o^T v_c)
+    loss = -np.log(hat_y[outsideWordIdx][0]) # x or [x] ? -> x
+    
+    # dJ / dv_c = -u_o^T + \hat{y}^TU^T
+    # Almost drop the minus sign here!!!
+    gradCenterVec = -outsideVectors[outsideWordIdx].reshape(1, -1) + (np.transpose(hat_y) @ outsideVectors)
+    gradCenterVec = gradCenterVec.reshape(-1) # We need to return a 1d-array.
+    # print(gradCenterVec)
+    # dJ/du_i = v_c^T\hat{y}_i
+    # dJ/du_o = -v_c^T + v_c^T\hat{y}_o
+    gradOutsideVecs = np.empty((v_c.shape[0], 0))
+    for hat_y_i in hat_y.reshape(-1):
+        gradOutsideVecs = np.c_[gradOutsideVecs, v_c * hat_y_i]
+    gradOutsideVecs = np.transpose(gradOutsideVecs)
+    gradOutsideVecs[outsideWordIdx] -= centerWordVec
+    # print(gradOutsideVecs)
 
     ### Please use the provided softmax function (imported earlier in this file)
     ### This numerically stable implementation helps you avoid issues pertaining

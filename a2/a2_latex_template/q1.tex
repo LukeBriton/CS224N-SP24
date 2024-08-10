@@ -76,8 +76,8 @@ Your answer should be one line. You may describe your answer in words.
     	&= -\bu_{o}^\top + \frac{\sum_{w \in \text{Vocab}} \bu_{w}^\top \exp(\bu_{w}^\top \bv_c)}{\sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)} \\
     	&= -\bu_{o}^\top + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
     	&= \sum_{w \in \text{Vocab}} \bu_{w}^\top \by_w + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
-    	&= -\bU^\top \by + \bU^\top\hat{\by} \\
-    	&= \bU^\top (\hat{\by} - \by) \tag{cf. textbook Eq. 5.48}
+    	&= -\by^\top\bU^\top  + \hat{\by}^\top\bU^\top \\
+    	&= (\hat{\by}^\top - \by^\top)\bU^\top \tag{cf. textbook Eq. 5.48}
    	\end{align*}
     }
     \item
@@ -85,15 +85,16 @@ Your answer should be one line. You may describe your answer in words.
     \textbf{Hint:} You may wish to review and use some introductory linear algebra concepts.
     
     \ifans{
-    \begin{itemize}
-    	\item $(\hat\by-\by) \in \text{Ker}\ \bU^\top$ (or $\text{Null}\ \bU^\top$)
-    	\item $(\hat\by-\by)$ is orthogonal to $\text{Ran}\ \bU^\top$
-    \end{itemize}
+    \begin{align*}
+    	(\hat{\by}^\top - \by^\top)\bU^\top = 0 &\Longleftrightarrow \bU(\hat{\by} - \by) = 0 \\
+    	&\Longleftrightarrow (\hat\by-\by) \in \text{Ker}\ \bU\ \text{(or}\ \text{Null}\ \bU) \\
+    	&\Longleftrightarrow (\hat\by-\by)\ \text{is orthogonal to}\ \text{Ran}\ \bU
+    \end{align*}
 	}
     \item
     The gradient you found is the difference between the two terms. Provide an interpretation of how each of these terms improves the word vector when this gradient is subtracted from the word vector $v_c$.
     
-    \ifans{ When the gradient is subtracted, it becomes $\bU^\top \by - \bU^\top\hat{\by}$. The first term moves $\bv_c$ towards the true ‘outside’ vector $\bu_o$ closer by adding $\bu_{o}^\top\by_o$, while the second term moves $\bv_c$ farther away from noise words by subtracting $\bu_{w}^\top\hat{\by}_w (w\neq o)$. (Note that the second term ‘lags’ the first term by subtracting $\bu_{o}^\top\hat{\by}_o$)
+    \ifans{ When the gradient is subtracted, it becomes $\by^\top\bU^\top - \hat{\by}^\top\bU^\top$. The first term moves $\bv_c$ towards the true ‘outside’ vector $\bu_o$ closer by adding $\bu_{o}^\top\by_o$, while the second term moves $\bv_c$ farther away from noise words by subtracting $\bu_{w}^\top\hat{\by}_w (w\neq o)$. (Note that the second term ‘lags’ the first term by subtracting $\bu_{o}^\top\hat{\by}_o$)
     }
 
 \end{enumerate}
