@@ -1,0 +1,33 @@
+--2024-08-10 11:21:17--  http://nlp.stanford.edu/~socherr/stanfordSentimentTreebank.zip
+Resolving nlp.stanford.edu (nlp.stanford.edu)... 198.18.0.174
+Connecting to nlp.stanford.edu (nlp.stanford.edu)|198.18.0.174|:80... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://nlp.stanford.edu/~socherr/stanfordSentimentTreebank.zip [following]
+--2024-08-10 11:21:19--  https://nlp.stanford.edu/~socherr/stanfordSentimentTreebank.zip
+Connecting to nlp.stanford.edu (nlp.stanford.edu)|198.18.0.174|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 6372817 (6.1M) [application/zip]
+Saving to: 'stanfordSentimentTreebank.zip'
+
+stanfordSentimentTreebank.zip           100%[=============================================================================>]   6.08M  1.58MB/s    in 3.8s
+
+2024-08-10 11:21:24 (1.58 MB/s) - 'stanfordSentimentTreebank.zip' saved [6372817/6372817]
+
+Archive:  stanfordSentimentTreebank.zip
+   creating: stanfordSentimentTreebank/
+  inflating: stanfordSentimentTreebank/datasetSentences.txt
+   creating: __MACOSX/
+   creating: __MACOSX/stanfordSentimentTreebank/
+  inflating: __MACOSX/stanfordSentimentTreebank/._datasetSentences.txt
+  inflating: stanfordSentimentTreebank/datasetSplit.txt
+  inflating: __MACOSX/stanfordSentimentTreebank/._datasetSplit.txt
+  inflating: stanfordSentimentTreebank/dictionary.txt
+  inflating: __MACOSX/stanfordSentimentTreebank/._dictionary.txt
+  inflating: stanfordSentimentTreebank/original_rt_snippets.txt
+  inflating: __MACOSX/stanfordSentimentTreebank/._original_rt_snippets.txt
+  inflating: stanfordSentimentTreebank/README.txt
+  inflating: __MACOSX/stanfordSentimentTreebank/._README.txt
+  inflating: stanfordSentimentTreebank/sentiment_labels.txt
+  inflating: __MACOSX/stanfordSentimentTreebank/._sentiment_labels.txt
+  inflating: stanfordSentimentTreebank/SOStr.txt
+  inflating: stanfordSentimentTreebank/STree.txt
