@@ -138,7 +138,63 @@ def negSamplingLossAndGradient(
     indices = [outsideWordIdx] + negSampleWordIndices
 
     ### YOUR CODE HERE (~10 Lines)
+    # 1. At first I haven't used indices etc. above, and passed "Gradient check for negSamplingLossAndGradient".
+    # 2. Later I changed to use samples, which should output the correct answer.
+    # 3. However it seems the "gradOutsideVecs" to return needs to give all words in "outsideVectors" a value,
+    # -> even if the unsampled ones should just be zero. (This explains why 1. could pass the Gradient check.)
 
+    v_c = centerWordVec.reshape(-1, 1) # v_c, column
+    u_o_T = outsideVectors[outsideWordIdx].reshape(1, -1)
+    # https://stackoverflow.com/questions/47540800/how-to-select-all-elements-in-a-numpy-array-except-for-a-sequence-of-indices
+    # U_neg = np.delete(outsideVectors, outsideWordIdx, 0) # without u_o
+    ## Misused the whole vocabulary for negative sampling before... 
+    U_neg = np.take(outsideVectors, negSampleWordIndices, 0)
+    
+    # sigmoided = sigmoid(- outsideVectors @ v_c) # \sigma(-U v_c), with o, 1d
+    sigmoided_o = sigmoid(u_o_T @ v_c)[0][0] # Be aware of sign!!!
+    ## sigmoided_sampled = np.take(sigmoided_neg.reshape(-1), negSampleWordIndices)
+    sigmoided_neg = sigmoid(- U_neg @ v_c) # \sigma(-U_neg v_c), without o, 1d
+
+    # loss=-\log(\sigma(u_o^T v_c))-\sum_{s=1}^K\log(\sigma(-u_{w_s}^T v_c))
+    # loss = -np.log(sigmoided_o) - np.sum(np.log(sigmoided_neg.reshape(-1)))
+    # loss = -np.log(1 - sigmoided[outsideWordIdx][0]) - np.sum(np.log(sigmoided_neg.reshape(-1)))
+    loss = -np.log(sigmoided_o) - np.sum(np.log(sigmoided_neg))
+    
+    # dJ / dv_c = -u_o^T\sigma(-u_o^T v_c) + \sum u_{w_s}^T \sigma{u_{w_s}^T v_c)}
+    # https://stackoverflow.com/questions/40034993/how-to-get-element-wise-matrix-multiplication-hadamard-product-in-numpy
+    # The default, axis=None, will sum all of the elements of the input array.
+    # print(np.sum((U_neg * (1 - sigmoided_neg)))) -> Sums all to a single float
+    # print(np.sum((U_neg * (1 - sigmoided_neg)), 0)) -> The vector we want
+    gradCenterVec = - (u_o_T * (1 - sigmoided_o)) + np.sum((U_neg * (1 - sigmoided_neg)), 0)
+    gradCenterVec = gradCenterVec.reshape(-1) # We need to return a 1d-array.
+
+    # dJ/du_i = v_c^T\sigma(u_i^T v_c) 
+    # dJ/du_o = v_c^T\sigma(u_o^T v_c) - v_c^T
+    # sigmoided_all = (1 - np.insert(sigmoided_neg, outsideWordIdx, 1 - sigmoided_o)) # 1d
+    sigmoided_all = (1 - np.insert(sigmoided_neg, 0, 1 - sigmoided_o)) # 1d
+
+    gradOutsideVecs = np.zeros(outsideVectors.shape)
+    for i, sig in enumerate(sigmoided_all):
+        idx = indices[i]
+        gradOutsideVecs[idx] = (np.count_nonzero(sigmoided_all == sig) * v_c * sig).reshape(-1) # (3, 1) 2d -> (3, 1) 1d
+    gradOutsideVecs[outsideWordIdx] -= centerWordVec
+    
+    '''
+    # The plausible answer corresponding to the written assignment, in terms of U_{w_1, \dots, o, \dots, w_K}^T
+    # Maybe I should have put o as the first term... never mind because its shape should also be "wrong".
+    gradOutsideVecs = np.empty((v_c.shape[0], 0))
+    for sig in sigmoided_all:
+        # https://stackoverflow.com/questions/28663856/how-do-i-count-the-occurrence-of-a-certain-item-in-an-ndarray
+        gradOutsideVecs = np.c_[gradOutsideVecs, np.count_nonzero(sigmoided_all == sig) * v_c * sig]
+    gradOutsideVecs = np.transpose(gradOutsideVecs)
+    # https://stackoverflow.com/questions/1903462/how-can-i-zip-sort-parallel-numpy-arrays
+    gradOutsideVecs = gradOutsideVecs[np.array(indices).argsort()]
+    # https://stackoverflow.com/questions/15637336/numpy-unique-with-order-preserved
+    _, idx = np.unique(gradOutsideVecs, return_index=True, axis = 0)
+    gradOutsideVecs = gradOutsideVecs[np.sort(idx)]
+    gradOutsideVecs[outsideWordIdx] -= centerWordVec # This should be excecuted after being deduplicated.
+    exit()
+    '''
     ### Please use your implementation of sigmoid in here.
 
     ### END YOUR CODE
@@ -186,7 +242,22 @@ def skipgram(currentCenterWord, windowSize, outsideWords, word2Ind,
     gradOutsideVectors = np.zeros(outsideVectors.shape)
 
     ### YOUR CODE HERE (~8 Lines)
-
+    ## At first I thought it was to 'append' each vector to the vectors 
+    ## gradCenterVecs, gradOutsideVectors initially already have zeros!!!
+    ## gradCenterVecs = np.empty((0, gradCenterVecs.shape[1]))
+    ## gradOutsideVectors = np.empty((0, gradOutsideVectors.shape[1]))
+    centerWordIdx = word2Ind[currentCenterWord]
+    centerWordVec = centerWordVectors[centerWordIdx]
+    for outsideWord in outsideWords:
+        outsideWordIdx = word2Ind[outsideWord]
+        _loss, gradCenterVec, gradOutsideVector = word2vecLossAndGradient(centerWordVec, outsideWordIdx, outsideVectors, dataset)
+        loss += _loss
+        gradCenterVecs[centerWordIdx] += gradCenterVec
+        gradOutsideVectors += gradOutsideVector
+        ## np.append() will turn 2d-array into 1d!!!
+        ## gradCenterVecs = np.append(gradCenterVecs, gradCenterVec)
+        ## gradCenterVecs = np.r_[gradCenterVecs, gradCenterVec.reshape(1, -1)]
+        ## gradOutsideVectors = np.r_[gradOutsideVectors, gradOutsideVector]
     ### END YOUR CODE
     
     return loss, gradCenterVecs, gradOutsideVectors

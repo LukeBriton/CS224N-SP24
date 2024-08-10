@@ -26,6 +26,7 @@
 \usepackage{soul}
 \usepackage{tikz}
 \usetikzlibrary{positioning,patterns,fit}
+\usepackage{cancel}
 
 % Margins
 \topmargin=-0.45in
@@ -260,7 +261,15 @@ Where $x$ is a scalar and $0<\alpha <1$, please compute the derivative of $f(x)$
 
 \begin{shaded}
 \begin{answer}
-
+\begin{equation*}
+f(x) =
+\left\{
+\begin{aligned}
+	\alpha\quad& x < 0\\
+	1\quad& x > 0
+\end{aligned}
+\right.
+\end{equation*}
 \end{answer}
 \end{shaded}
 
@@ -276,7 +285,9 @@ Please compute the derivative of $\sigma(x)$ with respect to $x$, where $x$ is a
 
 \begin{shaded}
 \begin{answer}
-
+\begin{equation*}
+	\frac{d\sigma (x)}{dx} = \left(1 - \frac{1}{e^{x} + 1}\right)' = \frac{e^x}{(e^{x} + 1)^2} = \frac{e^{x}}{e^{x} + 1}\cdot\frac{1}{e^{x} + 1} = \sigma(x)(1-\sigma(x))
+\end{equation*}
 \end{answer}
 \end{shaded}
 
@@ -303,9 +314,47 @@ Additional terms and functions (other than $\bm{U}_{o, \{w_1, \dots, w_K\}}$ and
 Caveat: So far we have looked at re-using quantities and approximating softmax with sampling for faster gradient descent. Do note that some of these optimizations might not be necessary on modern GPUs and are, to some extent, artifacts of the limited compute resources available at the time when these algorithms were developed.
 
 \begin{shaded}
-\begin{answer}
-
+\begin{enumerate}[label=(\roman*)]
+\item\begin{answer}
+\begin{equation*}
+	\begin{aligned}
+		\frac{\partial \bm J_{\text{neg-sample}}(\bm v_c, o, \bm U)}{\partial \bm v_c}
+		&= -\frac{\partial \log(\sigma(\bm u_o^\top \bm v_c))}{\partial \bm v_c} - \frac{\partial \sum_{s=1}^K \log(\sigma(-\bm u_{w_s}^\top \bm v_c))}{\partial \bm v_c} \\
+		&= -\frac{\bm u_o^\top \bcancel{\sigma(\bm u_o^\top \bm v_c)}(1 - \sigma(\bm u_o^\top \bm v_c))}{\bcancel{\sigma(\bm u_o^\top \bm v_c)}} - \sum_{s=1}^K\frac{-\bm u_{w_s}^\top\bcancel{\sigma(-\bm u_{w_s}^\top \bm v_c)}(1 - \sigma(-\bm u_{w_s}^\top \bm v_c))}{\bcancel{\sigma(-\bm u_{w_s}^\top \bm v_c)}} \\
+		&= -\bm u_o^\top(1 - \sigma(\bm u_o^\top \bm v_c)) + \sum_{s=1}^K \bm u_{w_s}^\top(1 - \sigma(-\bm u_{w_s}^\top \bm v_c)) \\
+		&= -\bm u_o^\top\sigma(-\bm u_o^\top \bm v_c) + \sum_{s=1}^K \bm u_{w_s}^\top\sigma(\bm u_{w_s}^\top \bm v_c)
+	\end{aligned} \tag{cf. textbook Eq. 6.37}
+\end{equation*}
 \end{answer}
+\begin{answer}
+\begin{equation*}
+	\begin{aligned}
+		\frac{\partial \bm J_{\text{neg-sample}}(\bm v_c, o, \bm U)}{\partial \bm u_o}
+		&= -\frac{\partial \log(\sigma(\bm u_o^\top \bm v_c))}{\partial \bm u_o} - \frac{\partial \sum_{s=1}^K \log(\sigma(-\bm u_{w_s}^\top \bm v_c))}{\partial \bm u_o} \\
+		&= -\frac{\bm v_c^\top \bcancel{\sigma(\bm u_o^\top \bm v_c)}(1 - \sigma(\bm u_o^\top \bm v_c))}{\bcancel{\sigma(\bm u_o^\top \bm v_c)}}\\
+		&= -\bm v_c^\top(1 - \sigma(\bm u_o^\top \bm v_c)) \\
+		&= -\bm v_c^\top\sigma(-\bm u_o^\top \bm v_c)
+	\end{aligned} \tag{cf. textbook Eq. 6.35}
+\end{equation*}
+\end{answer}
+\begin{answer}
+\begin{equation*}
+	\begin{aligned}
+		\frac{\partial \bm J_{\text{neg-sample}}(\bm v_c, o, \bm U)}{\partial \bm u_{w_s}}
+		&= -\frac{\partial \log(\sigma(\bm u_o^\top \bm v_c))}{\partial \bm u_{w_s}} - \frac{\partial \sum_{s=1}^K \log(\sigma(-\bm u_{w_s}^\top \bm v_c))}{\partial \bm u_{w_s}} \\
+		&= -\frac{-\bm v_{c}^\top\bcancel{\sigma(-\bm u_{w_s}^\top \bm v_c)}(1 - \sigma(-\bm u_{w_s}^\top \bm v_c))}{\bcancel{\sigma(-\bm u_{w_s}^\top \bm v_c)}}\\
+		&= \bm v_c^\top(1 - \sigma(-\bm u_{w_s}^\top \bm v_c)) \\
+		&= \bm v_c^\top\sigma(\bm u_{w_s}^\top \bm v_c)
+	\end{aligned} \tag{cf. textbook Eq. 6.36}
+\end{equation*}
+\end{answer}
+\item\begin{answer}
+	$\sigma(\bm{U}_{o, \{w_1, \dots, w_K\}}^\top\bm v_c)$
+\end{answer}
+\item\begin{answer}
+	The naive-softmax loss needs to compute $\sum_{w \in \text{Vocab}} \exp(\bm u_{w}^\top \bm v_c)$ every time step, which is dependent on every word in the vocabulary, the time complexity being $O(|\text{Vocab}|)$. Negative Sampling loss only depends on $\bm u_o^\top$ and $K$ negative samples, therefore its time complexity is $O(K + 1)$.
+\end{answer}
+\end{enumerate}
 \end{shaded}
 
 % Question 1-I
@@ -322,7 +371,14 @@ Compute the partial derivative of $\bm J_{\text{neg-sample}}$ with respect to a 
 
 \begin{shaded}
 \begin{answer}
-
+\begin{equation*}
+	\begin{aligned}
+		 \frac{\partial \bm J_{\text{neg-sample}}(\bm v_c, o, \bm U)}{\partial \bm u_{w_s}}
+		 &= -\left(\frac{\partial}{\partial u_{w_s}}\sum_{\substack{1\le i \le K \\ w_i = w_s}} \log(\sigma(-\bm u_{w_i}^\top \bm v_c)) + \frac{\partial}{\partial u_{w_s}}\sum_{\substack{1\le i \le K \\ w_i\ne w_s}} \log(\sigma(-\bm u_{w_i}^\top \bm v_c))\right) \\
+		 &= \sum_{\substack{1\le i \le K \\ w_i = w_s}} \bm v_c^\top\sigma(\bm u_{w_s}^\top \bm v_c) \\
+		 &= m(w_s) \bm v_c^\top\sigma(\bm u_{w_s}^\top \bm v_c)
+	\end{aligned} \tag{m refers to multiplicity}
+\end{equation*}
 \end{answer}
 \end{shaded}
 
@@ -345,7 +401,11 @@ Write your answers in terms of ${\frac{\partial \bm J(\bm v_c, w_{t+j}, \bm U)}{
 
 \begin{shaded}
 \begin{answer}
-
+\begin{enumerate}[label=(\roman*)]
+	\item ${\frac{\partial \bm J_{\textrm{skip-gram}}(\bm v_c, w_{t-m},\ldots w_{t+m}, \bm U)} {\partial \bm U}} = \sum\limits_{\substack{-m\le j \le m \\ j\ne 0}} \frac{\partial \bm J(\bm v_c, w_{t+j}, \bm U)}{\partial \bm U}$
+	\item ${\frac{\partial \bm J_{\textrm{skip-gram}}(\bm v_c, w_{t-m},\ldots w_{t+m}, \bm U)} {\partial \bm v_c}} = \sum\limits_{\substack{-m\le j \le m \\ j\ne 0}} \frac{\partial \bm J(\bm v_c, w_{t+j}, \bm U)}{\partial \bm v_c}$
+	\item ${\frac{\partial \bm J_{\textrm{skip-gram}}(\bm v_c, w_{t-m},\ldots w_{t+m}, \bm U)} {\partial \bm v_w}}$ = 0 when $w \ne c$
+\end{enumerate}
 \end{answer}
 \end{shaded}
 
