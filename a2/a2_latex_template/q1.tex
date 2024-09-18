@@ -75,7 +75,7 @@ Your answer should be one line. You may describe your answer in words.
     	&= -\frac{\partial \bu_{o}^\top \bv_c}{\partial \bv_c} + \frac{\partial \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)}{\partial \bv_c} \\
     	&= -\bu_{o}^\top + \frac{\sum_{w \in \text{Vocab}} \bu_{w}^\top \exp(\bu_{w}^\top \bv_c)}{\sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c)} \\
     	&= -\bu_{o}^\top + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
-    	&= \sum_{w \in \text{Vocab}} \bu_{w}^\top \by_w + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
+    	&= -\sum_{w \in \text{Vocab}} \bu_{w}^\top \by_w + \sum_{w \in \text{Vocab}} \bu_{w}^\top \hat{\by}_w \\
     	&= -\by^\top\bU^\top  + \hat{\by}^\top\bU^\top \\
     	&= (\hat{\by}^\top - \by^\top)\bU^\top \tag{cf. textbook Eq. 5.48}
    	\end{align*}
